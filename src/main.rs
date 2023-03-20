@@ -1,6 +1,7 @@
 use csv;
 use scraper;
 use std::{env, fs, path::Path};
+use unidecode;
 
 fn get_html_text(html_filepath: &Path) -> Option<Vec<String>> {
     let html_content = match fs::read_to_string(html_filepath) {
@@ -15,13 +16,20 @@ fn get_html_text(html_filepath: &Path) -> Option<Vec<String>> {
         .select(&scraper::Selector::parse("body").unwrap())
         .next()
         .unwrap();
-    Some(
-        body.text()
-            .collect::<Vec<_>>()
-            .iter()
-            .map(|s| s.to_string())
-            .collect(),
-    )
+    let text = body
+        .text()
+        .filter(|s| !s.trim().is_empty())
+        .map(|s| -> String {
+            let s = s.trim();
+            unidecode::unidecode(s)
+                .to_lowercase()
+                .chars()
+                .filter(|c| c.is_alphanumeric())
+                .collect()
+        })
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>();
+    Some(text)
 }
 
 fn get_bm25_score(query_elements: &[&str], results_elements: &[&str]) -> f64 {
@@ -48,7 +56,11 @@ fn process_query(query: &str, html_filepath: &Path, idx: usize) {
         .map(|s| s.as_str())
         .collect::<Vec<_>>();
     let bm25_score = get_bm25_score(&query_elements, &results_elements);
-    println!("Query num: {}, file {}", idx, html_filepath.file_name().unwrap().to_str().unwrap());
+    println!(
+        "Query num: {}, file {}",
+        idx,
+        html_filepath.file_name().unwrap().to_str().unwrap()
+    );
     println!("BM25 score: {}", bm25_score);
 }
 

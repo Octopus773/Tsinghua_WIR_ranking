@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 csv = "1.2.1"
 scraper = "0.15.0"
+unidecode = "0.3.0"
