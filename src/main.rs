@@ -36,14 +36,12 @@ fn get_vsm_score(
     df_ref: &HashMap<String, i64>,
 ) -> f64 {
     let N: f64 = 100_000_000_000.0;
-    let avdl = 500;
 
     query_elements.iter().fold(0.0, |acc, &query| {
         let tf = results_elements.iter().filter(|&&x| x == query).count() as f64;
         let df = *df_ref.get(query).unwrap() as f64;
         let idf = ((N - df + 0.5) / (df + 0.5)).log10();
-        let vsm_score = idf * tf;
-        acc + vsm_score
+        acc + tf * idf
     })
 }
 
@@ -52,18 +50,12 @@ fn get_bm25_score(
     results_elements: &[&str],
     df_ref: &HashMap<String, i64>,
 ) -> f64 {
-    // implement BM25 algorithm used for document ranking
-    // query_elements: are the query elements
-    // results_elements: are the elements of the html file aka the document
-
     let k1 = 1.2;
     let b = 0.75;
     let k3 = 500.0;
     let mut score = 0.0;
     let N = 100_000_000_000.0;
     let avdl = 500 as f64;
-    let R = 20.0;
-    let r = 0.0;
 
     for query in query_elements {
         let qtf = query_elements.iter().filter(|&&x| x == *query).count() as f64;
