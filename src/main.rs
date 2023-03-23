@@ -1,6 +1,6 @@
 use csv;
 use scraper;
-use std::{env, fs, path::Path, collections::HashMap, };
+use std::{collections::HashMap, env, fs, path::Path};
 use unidecode;
 
 fn get_html_text(html_filepath: &Path) -> Option<Vec<String>> {
@@ -26,12 +26,15 @@ fn get_html_text(html_filepath: &Path) -> Option<Vec<String>> {
                 .filter(|c| c.is_alphanumeric())
                 .collect()
         })
-        .filter(|s| !s.is_empty())
         .collect::<Vec<_>>();
     Some(text)
 }
 
-fn get_vsm_score(query_elements: &[&str], results_elements: &[&str], df_ref: &HashMap<String, i64>) -> f64 {
+fn get_vsm_score(
+    query_elements: &[&str],
+    results_elements: &[&str],
+    df_ref: &HashMap<String, i64>,
+) -> f64 {
     let N: f64 = 100_000_000_000.0;
     let avdl = 500;
 
@@ -44,40 +47,33 @@ fn get_vsm_score(query_elements: &[&str], results_elements: &[&str], df_ref: &Ha
     })
 }
 
-fn get_bm25_score(query_elements: &[&str], results_elements: &[&str]) -> f64 {
+fn get_bm25_score(
+    query_elements: &[&str],
+    results_elements: &[&str],
+    df_ref: &HashMap<String, i64>,
+) -> f64 {
     // implement BM25 algorithm used for document ranking
     // query_elements: are the query elements
     // results_elements: are the elements of the html file aka the document
 
     let k1 = 1.2;
     let b = 0.75;
+    let k3 = 500.0;
     let mut score = 0.0;
-    let avdl = results_elements.len() as f64 / results_elements.len() as f64;
+    let N = 100_000_000_000.0;
+    let avdl = 500 as f64;
+    let R = 20.0;
+    let r = 0.0;
 
     for query in query_elements {
-        let mut query_score = 0.0;
-        let idf = (results_elements.len() as f64
-            - results_elements
-                .iter()
-                .filter(|&&x| x.contains(query))
-                .count() as f64
-            + 0.5)
-            / (results_elements
-                .iter()
-                .filter(|&&x| x.contains(query))
-                .count() as f64
-                + 0.5);
+        let qtf = query_elements.iter().filter(|&&x| x == *query).count() as f64;
+        let tf = results_elements.iter().filter(|&&x| x == *query).count() as f64;
+        let doc_len = results_elements.len() as f64;
+        let K = k1 * ((1.0 - b) + b * (doc_len / avdl));
+        let df_query_ref = *df_ref.get(*query).unwrap() as f64;
+        let idf = ((N - df_query_ref + 0.5) / (df_query_ref + 0.5)).log10();
 
-        for result in results_elements {
-            let tf = result.split(' ').filter(|&x| x == *query).count() as f64;
-            let dl = result.split(' ').count() as f64;
-
-            let numerator = tf * (k1 + 1.0);
-            let denominator = tf + k1 * (1.0 - b + b * (dl / avdl));
-            let bm25_score = idf * numerator / denominator;
-
-            query_score += bm25_score;
-        }
+        let query_score = (idf * tf * (k1 + 1.0)) / (tf + K) * (((k3 + 1.0) * qtf) / (k3 + qtf));
 
         score += query_score;
     }
@@ -85,9 +81,15 @@ fn get_bm25_score(query_elements: &[&str], results_elements: &[&str]) -> f64 {
     score
 }
 
-fn process_query(query_elements: &[&str], html_filepath: &Path, idx: usize, df_ref: &HashMap<String, i64>) {
+fn process_query(
+    query_elements: &[&str],
+    html_filepath: &Path,
+    idx: usize,
+    df_ref: &HashMap<String, i64>,
+) {
     let results_elements = get_html_text(html_filepath);
     if results_elements.is_none() {
+        println!("Skipping query {}: can't get results tokens", idx);
         return;
     }
     let results_elements = results_elements.unwrap();
@@ -95,20 +97,22 @@ fn process_query(query_elements: &[&str], html_filepath: &Path, idx: usize, df_r
         .iter()
         .map(|s| s.as_str())
         .collect::<Vec<_>>();
-    let vsm_score = get_vsm_score(query_elements, &results_elements, df_ref);
-    //let bm25_score = get_bm25_score(&query_elements, &results_elements);
+
+    let vsm_score = get_vsm_score(&query_elements, &results_elements, df_ref);
+    let bm25_score = get_bm25_score(&query_elements, &results_elements, df_ref);
     println!(
         "Query num: {}, file {}",
         idx,
         html_filepath.file_name().unwrap().to_str().unwrap()
     );
     println!("vsm score: {}", vsm_score);
+    println!("BM25 score: {}", bm25_score);
 }
 
 fn handle_query_dir(dir_path: &Path, df_ref: &HashMap<String, i64>) {
     println!("Handling query dir: {}", dir_path.display());
     let mut rdr = csv::Reader::from_path(&dir_path.join("rank.csv")).unwrap();
-    // read query and id columns
+
     for (idx, result) in rdr.records().enumerate() {
         let record = match result {
             Ok(record) => record,
@@ -143,7 +147,7 @@ fn main() {
 
     let mut df_file = csv::Reader::from_path(&Path::new(&wd).join("df.csv")).unwrap();
     let mut df_map: HashMap<String, i64> = HashMap::new();
-    
+
     for record in df_file.records() {
         let r = match record {
             Ok(r) => r,
