@@ -20,22 +20,22 @@ older versions should work too
 ```
 [cbihan@fedora-hp Assignment3]$ ls -R
 .:
-ass3-data-niko.zip  Assignment3-Ranking.pptx  df.csv  query1  query2  query3  query4  query5  query_clement.zip  read_csv.py
+Assignment3-Ranking.pptx  df.csv  query1  query2  query3  query4  query5 read_csv.py
 
 ./query1:
-10.html  11.html  12.html  13.html  14.html  15.html  17.html  18.html  1.html  20.html  2.html  3.html  4.html  5.html  6.html  7.html  8.html  9.html  rank.csv  rank_result.csv
+10.html  11.html  12.html  13.html  14.html  15.html  17.html  18.html  1.html  20.html  2.html  3.html  4.html  5.html  6.html  7.html  8.html  9.html  rank.csv
 
 ./query2:
-10.html  11.html  12.html  13.html  14.html  15.html  16.html  17.html  18.html  19.html  1.html  20.html  2.html  3.html  4.html  5.html  6.html  7.html  8.html  9.html  rank.csv  rank_result.csv
+10.html  11.html  12.html  13.html  14.html  15.html  16.html  17.html  18.html  19.html  1.html  20.html  2.html  3.html  4.html  5.html  6.html  7.html  8.html  9.html  rank.csv
 
 ./query3:
-10.html  11.html  12.html  13.html  14.html  15.html  16.html  17.html  18.html  19.html  1.html  20.html  2.html  3.html  4.html  5.html  6.html  7.html  8.html  9.html  rank.csv  rank_result.csv
+10.html  11.html  12.html  13.html  14.html  15.html  16.html  17.html  18.html  19.html  1.html  20.html  2.html  3.html  4.html  5.html  6.html  7.html  8.html  9.html  rank.csv
 
 ./query4:
-10.html  11.html  12.html  13.html  14.html  15.html  16.html  17.html  18.html  19.html  1.html  20.html  2.html  3.html  4.html  5.html  6.html  7.html  8.html  9.html  rank.csv  rank_result.csv
+10.html  11.html  12.html  13.html  14.html  15.html  16.html  17.html  18.html  19.html  1.html  20.html  2.html  3.html  4.html  5.html  6.html  7.html  8.html  9.html  rank.csv
 
 ./query5:
-10.html  11.html  12.html  13.html  15.html  16.html  17.html  18.html  19.html  1.html  20.html  2.html  3.html  5.html  6.html  7.html  8.html  9.html  rank.csv  rank_result.csv
+10.html  11.html  12.html  13.html  15.html  16.html  17.html  18.html  19.html  1.html  20.html  2.html  3.html  5.html  6.html  7.html  8.html  9.html  rank.csv
 ```
 
 
