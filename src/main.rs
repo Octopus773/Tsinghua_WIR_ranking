@@ -134,7 +134,6 @@ fn handle_query_dir(dir_path: &Path, df_ref: &HashMap<String, i64>) {
             }
         };
         let query = record.get(1).unwrap();
-        let rank = record.get(3).unwrap().to_owned();
         let id = record.get(6).unwrap();
         let parse_id = match id.parse::<i32>() {
             Ok(id) => id,
@@ -154,17 +153,18 @@ fn handle_query_dir(dir_path: &Path, df_ref: &HashMap<String, i64>) {
             None => continue,
             Some((vsm, bm25)) => (vsm, bm25),
         };
-        vsm_scores.push((vsm, rank.clone()));
-        bm25_scores.push((bm25, rank.clone()));
+        let id = record.get(6).unwrap().to_owned();
+        vsm_scores.push((vsm, id.clone()));
+        bm25_scores.push((bm25, id.clone()));
 
         new_rows.push([
             record.get(0).unwrap().to_owned(),
             record.get(1).unwrap().to_owned(),
-            rank.to_owned(),
+            record.get(2).unwrap().to_owned(),
             record.get(3).unwrap().to_owned(),
             record.get(4).unwrap().to_owned(),
             record.get(5).unwrap().to_owned(),
-            record.get(6).unwrap().to_owned(),
+            id,
             "0".to_owned(),
             vsm.to_string(),
             "0".to_owned(),
@@ -176,8 +176,8 @@ fn handle_query_dir(dir_path: &Path, df_ref: &HashMap<String, i64>) {
     bm25_scores.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
 
     for row in new_rows.iter_mut() {
-        let vsm_rank = vsm_scores.iter().position(|r| r.1 == row[3]).unwrap() + 1;
-        let bm25_rank = bm25_scores.iter().position(|r| r.1 == row[3]).unwrap() + 1;
+        let vsm_rank = vsm_scores.iter().position(|r| r.1 == row[6]).unwrap() + 1;
+        let bm25_rank = bm25_scores.iter().position(|r| r.1 == row[6]).unwrap() + 1;
         row[7] = vsm_rank.to_string();
         row[9] = bm25_rank.to_string();
         wtr.write_record(row.iter()).unwrap();
