@@ -78,11 +78,11 @@ fn process_query(
     html_filepath: &Path,
     idx: usize,
     df_ref: &HashMap<String, i64>,
-) {
+) -> Option<(f64, f64)> {
     let results_elements = get_html_text(html_filepath);
     if results_elements.is_none() {
         println!("Skipping query {}: can't get results tokens", idx);
-        return;
+        return None;
     }
     let results_elements = results_elements.unwrap();
     let results_elements = results_elements
@@ -99,11 +99,31 @@ fn process_query(
     );
     println!("vsm score: {}", vsm_score);
     println!("BM25 score: {}", bm25_score);
+    Some((vsm_score, bm25_score))
 }
 
 fn handle_query_dir(dir_path: &Path, df_ref: &HashMap<String, i64>) {
     println!("Handling query dir: {}", dir_path.display());
     let mut rdr = csv::Reader::from_path(&dir_path.join("rank.csv")).unwrap();
+    let mut wtr = csv::Writer::from_path(&dir_path.join("rank_result.csv")).unwrap();
+    let mut vsm_scores = Vec::new();
+    let mut bm25_scores = Vec::new();
+    let mut new_rows: Vec<[String; 11]> = Vec::new();
+
+    wtr.write_record(&[
+        "",
+        "query",
+        "description",
+        "rank",
+        "title",
+        "url",
+        "id",
+        "vsm_rank",
+        "vsm_score",
+        "bm25_rank",
+        "bm25_score",
+    ])
+    .unwrap();
 
     for (idx, result) in rdr.records().enumerate() {
         let record = match result {
@@ -114,6 +134,7 @@ fn handle_query_dir(dir_path: &Path, df_ref: &HashMap<String, i64>) {
             }
         };
         let query = record.get(1).unwrap();
+        let rank = record.get(3).unwrap().to_owned();
         let id = record.get(6).unwrap();
         let parse_id = match id.parse::<i32>() {
             Ok(id) => id,
@@ -129,7 +150,37 @@ fn handle_query_dir(dir_path: &Path, df_ref: &HashMap<String, i64>) {
         let html_filepath = dir_path.join(id).with_extension("html");
         let query = query.to_lowercase();
         let query_elements = query.split_whitespace().collect::<Vec<_>>();
-        process_query(&query_elements, &html_filepath, idx + 1, df_ref);
+        let (vsm, bm25) = match process_query(&query_elements, &html_filepath, idx + 1, df_ref) {
+            None => continue,
+            Some((vsm, bm25)) => (vsm, bm25),
+        };
+        vsm_scores.push((vsm, rank.clone()));
+        bm25_scores.push((bm25, rank.clone()));
+
+        new_rows.push([
+            record.get(0).unwrap().to_owned(),
+            record.get(1).unwrap().to_owned(),
+            rank.to_owned(),
+            record.get(3).unwrap().to_owned(),
+            record.get(4).unwrap().to_owned(),
+            record.get(5).unwrap().to_owned(),
+            record.get(6).unwrap().to_owned(),
+            "0".to_owned(),
+            vsm.to_string(),
+            "0".to_owned(),
+            bm25.to_string(),
+        ]);
+    }
+
+    vsm_scores.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
+    bm25_scores.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
+
+    for row in new_rows.iter_mut() {
+        let vsm_rank = vsm_scores.iter().position(|r| r.1 == row[3]).unwrap() + 1;
+        let bm25_rank = bm25_scores.iter().position(|r| r.1 == row[3]).unwrap() + 1;
+        row[7] = vsm_rank.to_string();
+        row[9] = bm25_rank.to_string();
+        wtr.write_record(row.iter()).unwrap();
     }
 }
 
