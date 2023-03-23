@@ -15,6 +15,40 @@ Compiled with
 `rustc 1.68.0 (2c8cc3432 2023-03-06)`
 older versions should work too
 
+### Data preprocessing
+
+I'm using scrapper to get every text value from the HTML body tag, and then using, [unidecode](https://crates.io/crates/unidecode) in order to fully support chinese characters. Data is then lowercased.
+
+Note: the data is tokenized beforehand
+
+```rust
+extern crate unidecode;
+use unidecode::unidecode;
+
+assert_eq!(unidecode("Æneid"), "AEneid");
+assert_eq!(unidecode("étude"), "etude");
+assert_eq!(unidecode("北亰"), "Bei Jing");
+assert_eq!(unidecode("ᔕᓇᓇ"), "shanana");
+assert_eq!(unidecode("げんまい茶"), "genmaiCha ");
+```
+
+### VSM Calculation
+
+VSM is calculated using the following formula:
+
+`tf * idf`
+
+where the `tf` is the term frequency of the word in the document, and `idf` is the inverse document frequency of the word in the corpus.
+
+
+### BM25 Calculation
+
+BM25 is calculated using the following formula:
+
+`(idf * tf * (k1 + 1.0)) / (tf + K) * (((k3 + 1.0) * qtf) / (k3 + qtf))`
+
+where `idf` is the inverse document frequency of the word in the corpus, `tf` is the term frequency of the word in the document, `k1` is a constant, `K` is a constant, `k3` is a constant, `qtf` is the term frequency of the word in the query, and `qtf` is the term frequency of the word in the query.
+
 ### Folder structure
 
 ```
